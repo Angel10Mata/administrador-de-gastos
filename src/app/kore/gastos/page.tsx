@@ -57,9 +57,16 @@ export default function GastosPage() {
     setCargando(true);
     const supabase = createClient();
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setGastos([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("gastos")
         .select("*")
+        .eq("usuario_id", user.id)
         .order("fecha", { ascending: false });
       if (!error && data) setGastos(data);
     } catch (err) {

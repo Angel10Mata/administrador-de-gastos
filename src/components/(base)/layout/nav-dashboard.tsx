@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Dock, DockIcon } from "@/components/ui/dock";
@@ -15,8 +15,13 @@ import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 export function NavDashboard({ user }: { user?: any } = {}) {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const sessionUser = useUser();
   const { resolvedTheme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const isActive = (path: string) => pathname === path;
 
@@ -79,11 +84,14 @@ export function NavDashboard({ user }: { user?: any } = {}) {
 
             <div className="h-6 w-px bg-border/40 self-center" />
 
-            <DockIcon label={resolvedTheme === "dark" ? "Modo claro" : "Modo oscuro"} onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} className="group">
-              {resolvedTheme === "dark"
-                ? <Sun className="size-6 text-muted-foreground group-hover:text-yellow-400 transition-colors duration-300" />
-                : <Moon className="size-6 text-muted-foreground group-hover:text-indigo-400 transition-colors duration-300" />
-              }
+            <DockIcon label={mounted && resolvedTheme === "dark" ? "Modo claro" : "Modo oscuro"} onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")} className="group">
+              {!mounted ? (
+                <Moon className="size-6 text-muted-foreground opacity-50" />
+              ) : resolvedTheme === "dark" ? (
+                <Sun className="size-6 text-muted-foreground group-hover:text-yellow-400 transition-colors duration-300" />
+              ) : (
+                <Moon className="size-6 text-muted-foreground group-hover:text-indigo-400 transition-colors duration-300" />
+              )}
             </DockIcon>
 
             <div className="h-6 w-px bg-border/40 self-center" />

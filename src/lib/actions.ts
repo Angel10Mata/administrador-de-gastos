@@ -11,7 +11,13 @@ import { deudaSchema } from "./schemas";
 export async function crearDeudaAction(datos: any) {
   const supabase = await createClient();
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
     const validatedData = deudaSchema.parse(datos);
+    // Forzar el usuario_id desde la sesion segura del server
+    validatedData.usuario_id = user.id;
+
     const { data, error } = await supabase.from("deudas").insert([validatedData]).select();
     if (error) return { success: false, error: error.message };
 
@@ -56,12 +62,17 @@ export async function eliminarDeudaAction(id: string) {
 //           ACCION PARA ABONOS
 // ==========================================
 
-export async function registrarAbonoAction(deudaId: string, montoAbono: number, usuarioId: string) {
+export async function registrarAbonoAction(deudaId: string, montoAbono: number, usuarioId?: string) {
   const supabase = await createClient();
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
+    const safeUsuarioId = user.id;
+
     const { error: errorAbono } = await supabase
       .from("abonos")
-      .insert([{ deuda_id: deudaId, monto: montoAbono, usuario_id: usuarioId }]);
+      .insert([{ deuda_id: deudaId, monto: montoAbono, usuario_id: safeUsuarioId }]);
 
     if (errorAbono) throw new Error(errorAbono.message);
 
@@ -103,11 +114,14 @@ export async function crearGastoAction(datos: {
   descripcion: string, 
   monto: number, 
   categoria: string, 
-  usuario_id: string 
+  usuario_id?: string 
 }) {
   const supabase = await createClient();
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
     const { data, error } = await supabase
       .from("gastos")
       .insert([
@@ -115,7 +129,7 @@ export async function crearGastoAction(datos: {
           descripcion: datos.descripcion,
           monto: datos.monto,
           categoria: datos.categoria,
-          usuario_id: datos.usuario_id,
+          usuario_id: user.id, // Forzar desde sesion
         }
       ])
       .select();

@@ -21,8 +21,17 @@ export default function DeudasPage() {
     setCargando(true);
     const supabase = createClient();
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setDeudas([]);
+        return;
+      }
+      
       const { data, error } = await supabase
-        .from("deudas").select("*").order("created_at", { ascending: false });
+        .from("deudas")
+        .select("*")
+        .eq("usuario_id", user.id)
+        .order("created_at", { ascending: false });
       if (!error && data) setDeudas(data);
     } catch (err) { console.error(err); }
     finally { setCargando(false); }
