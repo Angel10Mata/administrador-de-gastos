@@ -1,0 +1,134 @@
+"use server"
+
+import { createClient } from "@/utils/supabase/server";
+import { revalidatePath } from "next/cache";
+import { deudaSchema } from "./schemas";
+
+// ==========================================
+//           ACCIONES DE DEUDAS
+// ==========================================
+
+export async function crearDeudaAction(datos: any) {
+  const supabase = await createClient();
+  try {
+    const validatedData = deudaSchema.parse(datos);
+    const { data, error } = await supabase.from("deudas").insert([validatedData]).select();
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/kore/deudas");
+    revalidatePath("/kore");
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function editarDeudaAction(id: string, datos: any) {
+  const supabase = await createClient();
+  try {
+    const validatedData = deudaSchema.parse(datos);
+    const { data, error } = await supabase.from("deudas").update(validatedData).eq("id", id).select();
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/kore/deudas");
+    revalidatePath("/kore");
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function eliminarDeudaAction(id: string) {
+  const supabase = await createClient();
+  try {
+    const { error } = await supabase.from("deudas").delete().eq("id", id);
+    if (error) return { success: false, error: error.message };
+
+    revalidatePath("/kore/deudas");
+    revalidatePath("/kore");
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==========================================
+//           ACCION PARA ABONOS
+// ==========================================
+
+export async function registrarAbonoAction(deudaId: string, montoAbono: number, usuarioId: string) {
+  const supabase = await createClient();
+  try {
+    const { error: errorAbono } = await supabase
+      .from("abonos")
+      .insert([{ deuda_id: deudaId, monto: montoAbono, usuario_id: usuarioId }]);
+
+    if (errorAbono) throw new Error(errorAbono.message);
+
+    const { data: deuda, error: errorFetch } = await supabase
+      .from("deudas")
+      .select("monto_abonado")
+      .eq("id", deudaId)
+      .single();
+
+    if (errorFetch) throw new Error(errorFetch.message);
+
+    const nuevoTotal = (Number(deuda.monto_abonado) || 0) + montoAbono;
+
+    const { error: errorUpdate } = await supabase
+      .from("deudas")
+      .update({ monto_abonado: nuevoTotal })
+      .eq("id", deudaId);
+
+    if (errorUpdate) throw new Error(errorUpdate.message);
+
+    revalidatePath("/kore");
+    revalidatePath("/kore/deudas");
+    revalidatePath("/kore/abonos");
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ==========================================
+//           ACCION PARA GASTOS (NUEVA)
+// ==========================================
+
+/**
+ * Registra un gasto personal mensual
+ */
+export async function crearGastoAction(datos: { 
+  descripcion: string, 
+  monto: number, 
+  categoria: string, 
+  usuario_id: string 
+}) {
+  const supabase = await createClient();
+
+  try {
+    const { data, error } = await supabase
+      .from("gastos")
+      .insert([
+        {
+          descripcion: datos.descripcion,
+          monto: datos.monto,
+          categoria: datos.categoria,
+          usuario_id: datos.usuario_id,
+        }
+      ])
+      .select();
+
+    if (error) throw new Error(error.message);
+
+    // Refrescar las rutas para que el Panel de Control y la lista de gastos se actualicen
+    revalidatePath("/kore");
+    revalidatePath("/kore/gastos");
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Error en crearGastoAction:", err.message);
+    return { success: false, error: err.message };
+  }
+}
