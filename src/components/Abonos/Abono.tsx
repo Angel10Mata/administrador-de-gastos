@@ -25,6 +25,7 @@ export default function FormularioAbono({ onCompletado, onCancelar }: AbonoProps
   const deudaSeleccionada = deudas.find((d) => d.id === deudaId);
 
   useEffect(() => {
+    if (!user?.id) return; // esperar a que el usuario esté disponible
     const cargarDeudas = async () => {
       setCargandoDeudas(true);
       const supabase = createClient();
@@ -32,6 +33,8 @@ export default function FormularioAbono({ onCompletado, onCancelar }: AbonoProps
         const { data, error } = await supabase
           .from("deudas")
           .select("id, nombre, monto_original, monto_abonado")
+          .eq("usuario_id", user.id)   // ← filtro por usuario
+          .neq("estado", "Pagada")     // opcional: ocultar las ya pagadas
           .order("nombre", { ascending: true });
         if (error) throw error;
         setDeudas(data || []);
@@ -42,7 +45,7 @@ export default function FormularioAbono({ onCompletado, onCancelar }: AbonoProps
       }
     };
     cargarDeudas();
-  }, []);
+  }, [user?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
