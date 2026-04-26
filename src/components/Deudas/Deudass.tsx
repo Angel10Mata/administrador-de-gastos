@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
 import { crearDeudaAction, editarDeudaAction, eliminarDeudaAction } from "@/lib/actions";
-import { CreditCard, Tag, DollarSign, Activity, Save, Trash2, X, AlignLeft, Info, Calendar } from "lucide-react";
+import { CreditCard, Save, Trash2, X, Calendar as CalendarIcon, Info } from "lucide-react";
 import { useUser } from "@/components/(base)/providers/UserProvider";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format, parseISO } from "date-fns";
 
 interface DeudaProps {
   productoActual?: any;
@@ -197,14 +199,12 @@ export default function FormularioDeuda({ productoActual, onCompletado, onCancel
         <div className="space-y-1.5">
           <label className={label}>
             <span className="flex items-center gap-1.5">
-              <Calendar size={11} /> Fecha de pago
+              <CalendarIcon size={11} /> Fecha de pago
             </span>
           </label>
-          <input
-            type="date"
-            value={fechaPago}
-            onChange={(e) => setFechaPago(e.target.value)}
-            className={`${field} [color-scheme:dark]`}
+          <DatePicker
+            date={fechaPago ? parseISO(fechaPago) : undefined}
+            setDate={(d) => setFechaPago(d ? format(d, "yyyy-MM-dd") : "")}
           />
           {/* Alerta si está a menos de 7 días */}
           {fechaPago && (() => {

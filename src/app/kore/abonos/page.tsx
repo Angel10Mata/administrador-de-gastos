@@ -71,7 +71,7 @@ export default function AbonosPage() {
   const totalMes = abonosMes.reduce((s, a) => s + (Number(a.monto) || 0), 0);
 
   return (
-    <main className="p-6 md:p-8 w-full max-w-5xl mx-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <main className="p-6 md:p-8 w-full" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
@@ -88,7 +88,7 @@ export default function AbonosPage() {
       <div className="flex justify-between items-start mb-6">
         <div>
           <h1
-            className="text-3xl leading-[1.1] text-foreground mb-1"
+            className="text-lg font-bold leading-[1.1] text-foreground mb-1"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
             Historial<br />
@@ -102,6 +102,16 @@ export default function AbonosPage() {
         >
           <Plus size={14} /> Nuevo abono
         </button>
+      </div>
+
+      {/* ── Sub-Navegación de Egresos ── */}
+      <div className="flex items-center gap-2 mb-7 bg-muted/20 p-1.5 rounded-xl w-fit border border-border/40">
+        <Link href="/kore/gastos" className="px-4 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all">
+          Gastos
+        </Link>
+        <Link href="/kore/deudas" className="px-4 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all">
+          Deudas
+        </Link>
       </div>
 
       {/* ── Selector de mes ── */}

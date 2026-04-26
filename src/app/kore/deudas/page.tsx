@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import FormularioDeuda from "@/components/Deudas/Deudass";
-import { Edit, Plus, Home, ChevronRight, CreditCard, FileText, FileSpreadsheet, Bell } from "lucide-react";
+import FormularioAbono from "@/components/Abonos/Abono";
+import { Edit, Plus, Home, ChevronRight, CreditCard, FileText, FileSpreadsheet, Bell, PiggyBank } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -14,6 +15,7 @@ export default function DeudasPage() {
   const [deudas, setDeudas]                 = useState<any[]>([]);
   const [deudaSeleccionada, setDeudaSeleccionada] = useState<any>(null);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [mostrarAbono, setMostrarAbono]     = useState(false);
   const [cargando, setCargando]             = useState(true);
   const [busqueda, setBusqueda]             = useState("");
 
@@ -148,7 +150,7 @@ export default function DeudasPage() {
 
   return (
     <main
-      className="p-6 md:p-8 w-full max-w-6xl mx-auto"
+      className="p-6 md:p-8 w-full"
       style={{ fontFamily: "'DM Sans', sans-serif" }}
     >
       {/* Breadcrumb */}
@@ -163,22 +165,40 @@ export default function DeudasPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex justify-between items-start gap-3 mb-7">
+      <div className="flex justify-between items-start gap-3 mb-4">
         <div className="min-w-0">
           <h1
-            className="text-2xl sm:text-3xl leading-[1.1] text-foreground mb-1"
+            className="text-lg font-bold leading-[1.1] text-foreground mb-1"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
             Mis deudas
           </h1>
           <p className="text-xs text-muted-foreground">Administración de saldos y pagos</p>
         </div>
-        <button
-          onClick={() => { setDeudaSeleccionada(null); setMostrarFormulario(true); }}
-          className="flex-shrink-0 flex items-center gap-1.5 bg-foreground text-background rounded-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          <Plus size={14} /> Nueva
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setMostrarAbono(true); }}
+            className="flex-shrink-0 flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-emerald-500/20 transition-colors"
+          >
+            <PiggyBank size={14} /> Abono
+          </button>
+          <button
+            onClick={() => { setDeudaSeleccionada(null); setMostrarFormulario(true); }}
+            className="flex-shrink-0 flex items-center gap-1.5 bg-foreground text-background rounded-lg px-4 py-2.5 text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Plus size={14} /> Nueva
+          </button>
+        </div>
+      </div>
+
+      {/* ── Sub-Navegación de Egresos ── */}
+      <div className="flex items-center gap-2 mb-7 bg-muted/20 p-1.5 rounded-xl w-fit border border-border/40">
+        <Link href="/kore/gastos" className="px-4 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all">
+          Gastos
+        </Link>
+        <Link href="/kore/deudas" className="px-4 py-1.5 rounded-lg text-sm font-medium bg-background shadow-sm text-foreground">
+          Deudas
+        </Link>
       </div>
 
       {/* Métricas */}
@@ -405,6 +425,17 @@ export default function DeudasPage() {
               productoActual={deudaSeleccionada}
               onCompletado={handleCompletado}
               onCancelar={() => { setMostrarFormulario(false); setDeudaSeleccionada(null); }}
+            />
+          </div>
+        </div>
+      )}
+
+      {mostrarAbono && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-md max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200 scrollbar-hide">
+            <FormularioAbono
+              onCompletado={() => { setMostrarAbono(false); cargarDeudas(); }}
+              onCancelar={() => setMostrarAbono(false)}
             />
           </div>
         </div>

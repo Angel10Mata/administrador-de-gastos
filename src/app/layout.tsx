@@ -74,7 +74,7 @@ export default async function RootLayout({
               <main className="h-screen w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth">
                 {children}
               </main>
-              <NavDock />
+              {/* <NavDock /> */}
             </UserProvider>
           </ThemeProvider>
         </Providers>

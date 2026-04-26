@@ -22,3 +22,13 @@ export const deudaSchema = z.object({
   fecha_pago: z.string().optional().nullable().or(z.literal('')),
   usuario_id: z.string().optional().nullable(),
 });
+
+// ==========================================
+//      ESQUEMA PARA INGRESOS
+// ==========================================
+export const ingresoSchema = z.object({
+  concepto: z.string().min(1, "El concepto es obligatorio"),
+  cantidad: z.coerce.number().positive("La cantidad debe ser mayor a 0"),
+  fecha: z.string().optional().nullable().or(z.literal('')),
+  usuario_id: z.string().optional().nullable(),
+});

@@ -84,7 +84,7 @@ export default function Header() {
 
       <aside
         className={cn(
-          "fixed right-0 top-0 z-50 h-full w-full sm:w-100 bg-background/95 backdrop-blur-2xl border-l border-border/50 transition-transform duration-500 overflow-y-auto shadow-2xl",
+          "fixed right-0 top-0 z-50 h-full w-full sm:w-[400px] bg-background/95 backdrop-blur-2xl border-l border-border/50 transition-transform duration-500 overflow-y-auto shadow-2xl",
           isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
@@ -101,18 +101,13 @@ export default function Header() {
           {user ? (
             <>
               <div className="mb-8 p-4 rounded-xl bg-muted/30 border border-border/50">
-                <div className="flex items-center gap-3 select-none">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-bold text-primary uppercase shrink-0">
-                    {initial}
-                  </div>
-                  <div className="text-left overflow-hidden">
-                    <p className="text-sm font-bold text-foreground leading-none truncate">
-                      Usuario: <span className="underline">{username}</span>
-                    </p>
-                    <p className="text-[10px] text-muted-foreground uppercase font-medium truncate mt-1">
-                      Rol: <span className="underline">{userRole}</span>
-                    </p>
-                  </div>
+                <div className="flex flex-col items-end justify-center select-none text-right">
+                  <p className="text-sm font-bold text-foreground leading-none truncate">
+                    Usuario: <span className="underline">{username}</span>
+                  </p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium truncate mt-1">
+                    Rol: <span className="underline">{userRole}</span>
+                  </p>
                 </div>
               </div>
 

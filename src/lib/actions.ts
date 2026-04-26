@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { deudaSchema } from "./schemas";
+import { deudaSchema, ingresoSchema } from "./schemas";
 
 // ==========================================
 //           ACCIONES DE DEUDAS
@@ -143,6 +143,62 @@ export async function crearGastoAction(datos: {
     return { success: true, data };
   } catch (err: any) {
     console.error("Error en crearGastoAction:", err.message);
+    return { success: false, error: err.message };
+  }
+}
+
+// ==========================================
+//           ACCIONES DE INGRESOS
+// ==========================================
+
+export async function crearIngresoAction(datos: any) {
+  const supabase = await createClient();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("No autenticado");
+
+    const validatedData = ingresoSchema.parse(datos);
+    validatedData.usuario_id = user.id;
+    if (!validatedData.fecha) {
+        validatedData.fecha = new Date().toISOString();
+    }
+
+    const { data, error } = await supabase.from("ingresos").insert([validatedData]).select();
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/kore/ingresos");
+    revalidatePath("/kore");
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function editarIngresoAction(id: string, datos: any) {
+  const supabase = await createClient();
+  try {
+    const validatedData = ingresoSchema.parse(datos);
+    const { data, error } = await supabase.from("ingresos").update(validatedData).eq("id", id).select();
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/kore/ingresos");
+    revalidatePath("/kore");
+    return { success: true, data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+export async function eliminarIngresoAction(id: string) {
+  const supabase = await createClient();
+  try {
+    const { error } = await supabase.from("ingresos").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/kore/ingresos");
+    revalidatePath("/kore");
+    return { success: true };
+  } catch (err: any) {
     return { success: false, error: err.message };
   }
 }

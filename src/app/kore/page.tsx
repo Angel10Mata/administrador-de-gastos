@@ -4,32 +4,40 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import {
-  LayoutDashboard, CreditCard, Clock, Receipt, TrendingDown,
+  LayoutDashboard, TrendingDown,
   ChevronLeft, ChevronRight as ChevronRightIcon, Bell, AlertTriangle, Calendar
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
+  Tooltip, CartesianGrid, Dot
+} from "recharts";
+import MonthDayPicker from "@/components/ui/month-day-picker";
 
 export default function PanelDeControl() {
   const hoy = new Date();
   const [metricas, setMetricas] = useState({
-    totalDeudas: 0, totalAbonado: 0, saldoPendiente: 0, totalGastosMes: 0,
+    totalDeudas: 0, totalAbonado: 0, saldoPendiente: 0, totalGastosMes: 0, totalIngresosMes: 0
   });
   const [deudas, setDeudas] = useState<any[]>([]);
   const [datosGrafica, setDatosGrafica] = useState<any[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarAlertas, setMostrarAlertas] = useState(false);
 
-  // Selector de mes
+  // Selector de mes / día
   const [mesSelec, setMesSelec] = useState(hoy.getMonth());
   const [anioSelec, setAnioSelec] = useState(hoy.getFullYear());
+  const [diaSelec, setDiaSelec] = useState<number | null>(null);
   const esMesActual = mesSelec === hoy.getMonth() && anioSelec === hoy.getFullYear();
 
   const irMesAnterior = () => {
+    setDiaSelec(null);
     if (mesSelec === 0) { setMesSelec(11); setAnioSelec((a) => a - 1); }
     else setMesSelec((m) => m - 1);
   };
   const irMesSiguiente = () => {
     if (esMesActual) return;
+    setDiaSelec(null);
     if (mesSelec === 11) { setMesSelec(0); setAnioSelec((a) => a + 1); }
     else setMesSelec((m) => m + 1);
   };
@@ -49,46 +57,86 @@ export default function PanelDeControl() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setCargando(false); return; }
 
-      const [deudasRes, gastosRes] = await Promise.all([
+      const [deudasRes, gastosRes, ingresosRes] = await Promise.all([
         supabase.from("deudas").select("*").eq("usuario_id", user.id).order("created_at", { ascending: false }),
         supabase.from("gastos").select("*").eq("usuario_id", user.id).order("fecha", { ascending: true }),
+        supabase.from("ingresos").select("*").eq("usuario_id", user.id).order("fecha", { ascending: true }),
       ]);
 
       const deudasData = deudasRes.data || [];
       const gastosData = gastosRes.data || [];
+      const ingresosData = ingresosRes.data || [];
 
       const totalOriginal = deudasData.reduce((s, d) => s + (Number(d.monto_original) || 0), 0);
       const totalAbonado = deudasData.reduce((s, d) => s + (Number(d.monto_abonado) || 0), 0);
 
-      // Gastos del mes seleccionado
+      // Gastos e ingresos del mes seleccionado (o día exacto si diaSelec != null)
       const gastosMes = gastosData.filter((g) => {
+        if (!g.fecha) return false;
+        const f = new Date(g.fecha);
+        const mismoMes = f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
+        if (!mismoMes) return false;
+        if (diaSelec !== null) return f.getDate() === diaSelec;
+        return true;
+      });
+      const ingresosMes = ingresosData.filter((i) => {
+        if (!i.fecha) return false;
+        const f = new Date(i.fecha);
+        const mismoMes = f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
+        if (!mismoMes) return false;
+        if (diaSelec !== null) return f.getDate() === diaSelec;
+        return true;
+      });
+      
+      const totalGastos = gastosMes.reduce((s, g) => s + (Number(g.monto) || 0), 0);
+      const totalIngresos = ingresosMes.reduce((s, i) => s + (Number(i.cantidad) || 0), 0);
+
+      // Gráfica de puntos: ingreso vs gasto por dia
+      const diasEnMes = new Date(anioSelec, mesSelec + 1, 0).getDate();
+      const limDia = diaSelec !== null ? diaSelec : (esMesActual ? hoy.getDate() : diasEnMes);
+      const desdeDia = diaSelec !== null ? diaSelec - 1 : 0;
+
+      // Siempre calcular porDia desde todos los datos del mes (sin filtro de día para la gráfica)
+      const gastosMesCompleto = gastosData.filter((g) => {
+        if (!g.fecha) return false;
         const f = new Date(g.fecha);
         return f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
       });
-      const totalGastos = gastosMes.reduce((s, g) => s + (Number(g.monto) || 0), 0);
-
-      // Gráfica acumulada del mes
-      const porDia: Record<string, number> = {};
-      gastosMes.forEach((g) => {
-        const dia = new Date(g.fecha).getDate().toString();
-        porDia[dia] = (porDia[dia] || 0) + Number(g.monto || 0);
+      const ingresosMesCompleto = ingresosData.filter((i) => {
+        if (!i.fecha) return false;
+        const f = new Date(i.fecha);
+        return f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
       });
-      const diasEnMes = new Date(anioSelec, mesSelec + 1, 0).getDate();
-      const limDia = esMesActual ? hoy.getDate() : diasEnMes;
-      let acum = 0;
-      const grafica = Array.from({ length: diasEnMes }, (_, i) => {
-        const dia = (i + 1).toString();
-        acum += porDia[dia] || 0;
-        return { dia: `${i + 1}`, gasto: Math.round(acum * 100) / 100 };
-      }).filter((_, i) => i < limDia);
 
-      setMetricas({ totalDeudas: totalOriginal, totalAbonado, saldoPendiente: totalOriginal - totalAbonado, totalGastosMes: totalGastos });
+      const gastosPorDia: Record<string, number> = {};
+      gastosMesCompleto.forEach((g) => {
+        const dia = new Date(g.fecha).getDate().toString();
+        gastosPorDia[dia] = (gastosPorDia[dia] || 0) + Number(g.monto || 0);
+      });
+
+      const ingresosPorDia: Record<string, number> = {};
+      ingresosMesCompleto.forEach((i) => {
+        const dia = new Date(i.fecha).getDate().toString();
+        ingresosPorDia[dia] = (ingresosPorDia[dia] || 0) + Number(i.cantidad || 0);
+      });
+
+      const grafica = Array.from({ length: limDia - desdeDia }, (_, i) => {
+        const diaNum = desdeDia + i + 1;
+        const dia = diaNum.toString();
+        return {
+          dia: `${diaNum}`,
+          gasto: Math.round((gastosPorDia[dia] || 0) * 100) / 100,
+          ingreso: Math.round((ingresosPorDia[dia] || 0) * 100) / 100,
+        };
+      });
+
+      setMetricas({ totalDeudas: totalOriginal, totalAbonado, saldoPendiente: totalOriginal - totalAbonado, totalGastosMes: totalGastos, totalIngresosMes: totalIngresos });
       setDeudas(deudasData);
       setDatosGrafica(grafica);
       setCargando(false);
     };
     cargarDatos();
-  }, [mesSelec, anioSelec]);
+  }, [mesSelec, anioSelec, diaSelec]);
 
   const pctAbonado = metricas.totalDeudas ? Math.round((metricas.totalAbonado / metricas.totalDeudas) * 100) : 0;
   const barColor = (pct: number) => {
@@ -128,9 +176,8 @@ export default function PanelDeControl() {
           <span className="text-emerald-500 font-medium">Resumen</span>
         </nav>
 
-        {/* Header con botón de notificaciones */}
         <div className="flex items-start justify-between mb-6 relative">
-          <h1 className="text-3xl leading-[1.15] text-foreground" style={{ fontFamily: "'Instrument Serif', serif" }}>
+          <h1 className="text-lg font-bold leading-[1.15] text-foreground" style={{ fontFamily: "'Instrument Serif', serif" }}>
             Resumen<br />
             <em className="italic text-muted-foreground">financiero</em>
           </h1>
@@ -232,7 +279,7 @@ export default function PanelDeControl() {
           })()}
         </div>
 
-        {/* ── Selector de mes ── */}
+        {/* ── Selector de fecha ── */}
         <div className="flex items-center gap-3 mb-7">
           <button
             onClick={irMesAnterior}
@@ -241,9 +288,16 @@ export default function PanelDeControl() {
             <ChevronLeft size={15} />
           </button>
 
-          <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center">
-            {nombreMes}
-          </span>
+          <MonthDayPicker
+            anio={anioSelec}
+            mes={mesSelec}
+            dia={diaSelec}
+            onChange={(a, m, d) => {
+              setAnioSelec(a);
+              setMesSelec(m);
+              setDiaSelec(d);
+            }}
+          />
 
           <button
             onClick={irMesSiguiente}
@@ -258,58 +312,141 @@ export default function PanelDeControl() {
 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Link href="/kore/deudas" className="border border-border/20 rounded-2xl p-6 hover:bg-muted/30 transition-colors group">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4">Saldo pendiente total</p>
-            {cargando ? <Skeleton className="h-10 w-48 mb-2" /> : (
-              <p className="font-mono text-4xl text-red-500 leading-none mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
-                {fmtQ(metricas.saldoPendiente)}
-              </p>
+          <Link href="/kore/ingresos" className="flex flex-col justify-center items-center h-48 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-6 hover:bg-emerald-500/10 transition-colors group">
+            <span className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <TrendingDown className="text-emerald-500 rotate-180" size={24} />
+            </span>
+            <span className="text-xl font-medium text-emerald-600 dark:text-emerald-400">Total Ingresos</span>
+            {cargando ? (
+               <Skeleton className="h-8 w-32 mt-2" />
+            ) : (
+               <span className="font-mono text-3xl md:text-4xl text-emerald-500 font-bold mt-2">{fmtQ(metricas.totalIngresosMes)}</span>
             )}
-            <p className="text-xs text-muted-foreground">
-              De {fmtQ(metricas.totalDeudas)} originales — {pctAbonado}% abonado
-            </p>
           </Link>
 
-          <Link href="/kore/gastos" className="border border-border/20 rounded-2xl p-6 hover:bg-muted/30 transition-colors">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-4 capitalize">
-              Gastos — {nombreMes}
-            </p>
-            {cargando ? <Skeleton className="h-10 w-48 mb-2" /> : (
-              <p className="font-mono text-4xl text-amber-500 leading-none mb-2" style={{ fontFamily: "'DM Mono', monospace" }}>
-                {fmtQ(metricas.totalGastosMes)}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <TrendingDown size={12} /> Tendencia de consumo actual
-            </p>
+          <Link href="/kore/gastos" className="flex flex-col h-48 border border-amber-500/30 bg-amber-500/5 rounded-2xl p-6 hover:bg-amber-500/10 transition-colors group">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                <TrendingDown className="text-amber-500" size={20} />
+              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Egresos</span>
+                {cargando ? (
+                   <div className="h-6 w-24 mt-1 bg-muted rounded animate-pulse" />
+                ) : (
+                   <span className="font-mono text-xl md:text-2xl text-amber-500 font-bold">{fmtQ(metricas.totalGastosMes)}</span>
+                )}
+              </div>
+            </div>
+            
+            <div className="mt-auto">
+               <span className="text-sm font-medium text-amber-700/80 uppercase tracking-widest flex items-center gap-2">
+                 Ver detalles &rarr;
+               </span>
+            </div>
           </Link>
         </div>
 
-        {/* Deudas recientes */}
-        <div className="w-full">
-          <div className="border border-border/20 rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-               <span className="text-sm font-medium">Deudas recientes</span>
-               <Link href="/kore/deudas" className="text-[10px] text-muted-foreground hover:text-foreground">Ver todas →</Link>
-             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-               {cargando ? [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />) : deudas.slice(0, 4).map((d) => (
-                 <div key={d.id} className="flex flex-col gap-2">
-                   <div className="flex justify-between text-sm">
-                     <span className="font-medium">{d.nombre}</span>
-                     <span className="font-mono text-xs">{fmtQ(d.monto_original - d.monto_abonado)}</span>
-                   </div>
-                   <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-                     <div
-                       className={`h-full ${barColor(Math.round((d.monto_abonado / d.monto_original) * 100))}`}
-                       style={{ width: `${(d.monto_abonado / d.monto_original) * 100}%` }}
-                     />
-                   </div>
-                 </div>
-               ))}
-             </div>
-           </div>
-         </div>
+        {/* ── Gráfica comparativa ── */}
+        <div className="bg-muted/20 border border-border/30 rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Comparativo del mes</p>
+              <p className="text-xs text-muted-foreground capitalize">{nombreMes}</p>
+            </div>
+            <div className="flex items-center gap-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                Ingresos
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                Egresos
+              </span>
+            </div>
+          </div>
+
+          {cargando ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="h-4 w-48 bg-muted rounded animate-pulse" />
+            </div>
+          ) : datosGrafica.length === 0 ? (
+            <div className="h-52 flex items-center justify-center text-sm text-muted-foreground">
+              Sin datos para este mes
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={210}>
+              <AreaChart data={datosGrafica} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                <defs>
+                  <linearGradient id="gradIngreso" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradGasto" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.06} />
+                <XAxis
+                  dataKey="dia"
+                  tick={{ fontSize: 10, fill: "currentColor", opacity: 0.45 }}
+                  tickLine={false}
+                  axisLine={false}
+                  interval={Math.floor(datosGrafica.length / 6)}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: "currentColor", opacity: 0.45 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `Q${v}`}
+                />
+                <Tooltip
+                  cursor={{ stroke: "currentColor", strokeOpacity: 0.1, strokeWidth: 1 }}
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="bg-background border border-border/50 rounded-xl px-3 py-2.5 text-xs shadow-xl">
+                        <p className="text-muted-foreground mb-2 font-medium">Día {label}</p>
+                        {payload.map((p: any) => (
+                          <p key={p.dataKey} className="font-mono font-semibold" style={{ color: p.color }}>
+                            {p.dataKey === "ingreso" ? "Ingreso" : "Egreso"}: Q {Number(p.value).toLocaleString("es-GT", { minimumFractionDigits: 2 })}
+                          </p>
+                        ))}
+                      </div>
+                    );
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="ingreso"
+                  name="Ingreso"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fill="url(#gradIngreso)"
+                  dot={(props: any) => {
+                    if (!props.value) return <g key={props.key} />;
+                    return <Dot key={props.key} {...props} r={3.5} fill="#10b981" strokeWidth={0} />;
+                  }}
+                  activeDot={{ r: 5, fill: "#10b981", strokeWidth: 0 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="gasto"
+                  name="Egreso"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  fill="url(#gradGasto)"
+                  dot={(props: any) => {
+                    if (!props.value) return <g key={props.key} />;
+                    return <Dot key={props.key} {...props} r={3.5} fill="#f59e0b" strokeWidth={0} />;
+                  }}
+                  activeDot={{ r: 5, fill: "#f59e0b", strokeWidth: 0 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </div>
 
       </div>
     </main>

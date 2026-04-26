@@ -11,6 +11,7 @@ import {
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import MonthDayPicker from "@/components/ui/month-day-picker";
 
 const categoriaIcono: Record<string, React.ElementType> = {
   Alimentación: Utensils,
@@ -30,6 +31,7 @@ export default function GastosPage() {
   // Navegación de mes: año y mes seleccionado (0-indexed)
   const [mesSelec, setMesSelec] = useState(hoy.getMonth());
   const [anioSelec, setAnioSelec] = useState(hoy.getFullYear());
+  const [diaSelec, setDiaSelec] = useState<number | null>(null);
 
   const fmtQ = (n: number) =>
     `Q ${(n || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -43,12 +45,14 @@ export default function GastosPage() {
   const esMesActual = mesSelec === hoy.getMonth() && anioSelec === hoy.getFullYear();
 
   const irMesAnterior = () => {
+    setDiaSelec(null);
     if (mesSelec === 0) { setMesSelec(11); setAnioSelec((a) => a - 1); }
     else setMesSelec((m) => m - 1);
   };
 
   const irMesSiguiente = () => {
     if (esMesActual) return;
+    setDiaSelec(null);
     if (mesSelec === 11) { setMesSelec(0); setAnioSelec((a) => a + 1); }
     else setMesSelec((m) => m + 1);
   };
@@ -83,14 +87,17 @@ export default function GastosPage() {
     cargarGastos();
   };
 
-  // Filtrar por mes seleccionado
+  // Filtrar por mes seleccionado (y opcionalmente día)
   const gastosMes = useMemo(() =>
     gastos.filter((g) => {
       if (!g.fecha) return false;
       const f = new Date(g.fecha);
-      return f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
+      const mismoMes = f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
+      if (!mismoMes) return false;
+      if (diaSelec !== null) return f.getDate() === diaSelec;
+      return true;
     }),
-    [gastos, mesSelec, anioSelec]
+    [gastos, mesSelec, anioSelec, diaSelec]
   );
 
   // Filtrar además por búsqueda
@@ -151,7 +158,7 @@ export default function GastosPage() {
   };
 
   return (
-    <main className="p-6 md:p-8 w-full max-w-6xl mx-auto" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+    <main className="p-6 md:p-8 w-full" style={{ fontFamily: "'DM Sans', sans-serif" }}>
 
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs text-muted-foreground mb-6">
@@ -165,10 +172,10 @@ export default function GastosPage() {
       </nav>
 
       {/* Header */}
-      <div className="flex justify-between items-start gap-3 mb-7">
+      <div className="flex justify-between items-start gap-3 mb-4">
         <div className="min-w-0">
           <h1
-            className="text-2xl sm:text-3xl leading-[1.1] text-foreground mb-1"
+            className="text-lg font-bold leading-[1.1] text-foreground mb-1"
             style={{ fontFamily: "'Instrument Serif', serif" }}
           >
             Mis gastos del mes
@@ -182,7 +189,17 @@ export default function GastosPage() {
         </button>
       </div>
 
-      {/* ── Selector de mes ── */}
+      {/* ── Sub-Navegación de Egresos ── */}
+      <div className="flex items-center gap-2 mb-7 bg-muted/20 p-1.5 rounded-xl w-fit border border-border/40">
+        <Link href="/kore/gastos" className="px-4 py-1.5 rounded-lg text-sm font-medium bg-background shadow-sm text-foreground">
+          Gastos
+        </Link>
+        <Link href="/kore/deudas" className="px-4 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-all">
+          Deudas
+        </Link>
+      </div>
+
+      {/* ── Selector de fecha ── */}
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={irMesAnterior}
@@ -191,9 +208,16 @@ export default function GastosPage() {
           <ChevronLeft size={15} />
         </button>
 
-        <span className="text-sm font-medium text-foreground capitalize min-w-[140px] text-center">
-          {nombreMes}
-        </span>
+        <MonthDayPicker
+          anio={anioSelec}
+          mes={mesSelec}
+          dia={diaSelec}
+          onChange={(a, m, d) => {
+            setAnioSelec(a);
+            setMesSelec(m);
+            setDiaSelec(d);
+          }}
+        />
 
         <button
           onClick={irMesSiguiente}

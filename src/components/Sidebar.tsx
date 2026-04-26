@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CreditCard, Clock, Receipt, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, CreditCard, Clock, Receipt, Menu, X, LogOut, TrendingDown } from "lucide-react";
 
 export default function Sidebar() {
   const [open, setOpen] = useState(false);
@@ -10,25 +10,23 @@ export default function Sidebar() {
 
   const navItems = [
     { href: "/kore", label: "Resumen", icon: LayoutDashboard },
-    { href: "/kore/deudas", label: "Mis deudas", icon: CreditCard },
-    { href: "/kore/abonos", label: "Abonos", icon: Clock },
-    { href: "/kore/gastos", label: "Gastos", icon: Receipt },
+    { href: "/kore/ingresos", label: "Ingresos", icon: TrendingDown },
   ];
 
   return (
     <>
-      {/* Botón Hamburguesa Flotante */}
+      {/* Botón Hamburguesa Flotante - Oculto en Desktop */}
       <button 
         onClick={() => setOpen(!open)}
-        className="fixed top-5 left-5 z-50 p-2 bg-background border border-border/40 rounded-lg shadow-sm text-muted-foreground hover:text-foreground transition-all"
+        className="fixed top-5 left-5 z-50 p-2 bg-background border border-border/40 rounded-lg shadow-sm text-muted-foreground hover:text-foreground transition-all md:hidden"
         aria-label="Toggle menu"
       >
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      {/* Overlay fondo oscuro cuando está abierto */}
+      {/* Overlay fondo oscuro cuando está abierto - Oculto en Desktop */}
       <div 
-        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${
           open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
         onClick={() => setOpen(false)}
@@ -36,7 +34,7 @@ export default function Sidebar() {
 
       {/* Sidebar Panel */}
       <aside 
-        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border/20 px-6 py-8 z-40 flex flex-col gap-6 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border/20 px-6 py-8 z-40 flex flex-col gap-6 transition-transform duration-300 md:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -62,8 +60,8 @@ export default function Sidebar() {
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm transition-colors ${
                   active 
-                    ? "bg-muted text-foreground font-medium" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    ? "text-foreground font-semibold" 
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <item.icon size={16} />
@@ -78,7 +76,7 @@ export default function Sidebar() {
           <Link
             href="/api/logout"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-red-400 transition-colors"
           >
             <LogOut size={15} />
             Cerrar sesión
