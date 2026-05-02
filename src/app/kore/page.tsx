@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import {
-  LayoutDashboard, TrendingDown, TrendingUp,
+  LayoutDashboard, TrendingDown,
   ChevronLeft, ChevronRight as ChevronRightIcon, Bell, AlertTriangle, Calendar
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,6 +15,12 @@ import {
 } from "recharts";
 import MonthDayPicker from "@/components/ui/month-day-picker";
 
+const DONA_COLORS = [
+  "#f59e0b", "#10b981", "#6366f1", "#ef4444",
+  "#3b82f6", "#ec4899", "#14b8a6", "#f97316",
+  "#8b5cf6", "#84cc16",
+];
+
 export default function PanelDeControl() {
   const hoy = new Date();
   const [metricas, setMetricas] = useState({
@@ -22,7 +28,7 @@ export default function PanelDeControl() {
   });
   const [deudas, setDeudas] = useState<any[]>([]);
   const [datosGrafica, setDatosGrafica] = useState<any[]>([]);
-  const [gastosCategoria, setGastosCategoria] = useState<{ name: string; value: number }[]>([]);
+  const [datosDona, setDatosDona] = useState<{ name: string; value: number }[]>([]);
   const [cargando, setCargando] = useState(true);
   const [mostrarAlertas, setMostrarAlertas] = useState(false);
 
@@ -136,17 +142,16 @@ export default function PanelDeControl() {
       setDeudas(deudasData);
       setDatosGrafica(grafica);
 
-      // Calcular gastos por categoría para la dona
+      // Dona: gastos por categoría del mes
       const catMap: Record<string, number> = {};
       gastosMes.forEach((g) => {
         const cat = g.categoria || "Otros";
         catMap[cat] = (catMap[cat] || 0) + Number(g.monto || 0);
       });
-      setGastosCategoria(
-        Object.entries(catMap)
-          .map(([name, value]) => ({ name, value }))
-          .sort((a, b) => b.value - a.value)
-      );
+      const donaData = Object.entries(catMap)
+        .map(([name, value]) => ({ name, value: Math.round(value * 100) / 100 }))
+        .sort((a, b) => b.value - a.value);
+      setDatosDona(donaData);
 
       setCargando(false);
     };
@@ -326,31 +331,19 @@ export default function PanelDeControl() {
 
 
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-
-          {/* Panel Ingresos */}
-          <Link href="/kore/ingresos" className="flex flex-col h-48 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-6 hover:bg-emerald-500/10 transition-colors group">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
-                <TrendingUp className="text-emerald-500" size={20} />
-              </span>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Ingresos</span>
-                {cargando ? (
-                  <div className="h-6 w-24 mt-1 bg-muted rounded animate-pulse" />
-                ) : (
-                  <span className="font-mono text-xl md:text-2xl text-emerald-500 font-bold">{fmtQ(metricas.totalIngresosMes)}</span>
-                )}
-              </div>
-            </div>
-            <div className="mt-auto">
-              <span className="text-sm font-medium text-emerald-700/80 uppercase tracking-widest flex items-center gap-2">
-                Ver detalles &rarr;
-              </span>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <Link href="/kore/ingresos" className="flex flex-col justify-center items-center h-48 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-6 hover:bg-emerald-500/10 transition-colors group">
+            <span className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <TrendingDown className="text-emerald-500 rotate-180" size={24} />
+            </span>
+            <span className="text-xl font-medium text-emerald-600 dark:text-emerald-400">Total Ingresos</span>
+            {cargando ? (
+               <Skeleton className="h-8 w-32 mt-2" />
+            ) : (
+               <span className="font-mono text-3xl md:text-4xl text-emerald-500 font-bold mt-2">{fmtQ(metricas.totalIngresosMes)}</span>
+            )}
           </Link>
 
-          {/* Panel Egresos */}
           <Link href="/kore/gastos" className="flex flex-col h-48 border border-amber-500/30 bg-amber-500/5 rounded-2xl p-6 hover:bg-amber-500/10 transition-colors group">
             <div className="flex items-center gap-3 mb-4">
               <span className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
@@ -359,16 +352,17 @@ export default function PanelDeControl() {
               <div className="flex flex-col">
                 <span className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Egresos</span>
                 {cargando ? (
-                  <div className="h-6 w-24 mt-1 bg-muted rounded animate-pulse" />
+                   <div className="h-6 w-24 mt-1 bg-muted rounded animate-pulse" />
                 ) : (
-                  <span className="font-mono text-xl md:text-2xl text-amber-500 font-bold">{fmtQ(metricas.totalGastosMes)}</span>
+                   <span className="font-mono text-xl md:text-2xl text-amber-500 font-bold">{fmtQ(metricas.totalGastosMes)}</span>
                 )}
               </div>
             </div>
+            
             <div className="mt-auto">
-              <span className="text-sm font-medium text-amber-700/80 uppercase tracking-widest flex items-center gap-2">
-                Ver detalles &rarr;
-              </span>
+               <span className="text-sm font-medium text-amber-700/80 uppercase tracking-widest flex items-center gap-2">
+                 Ver detalles &rarr;
+               </span>
             </div>
           </Link>
         </div>
@@ -473,69 +467,100 @@ export default function PanelDeControl() {
             </ResponsiveContainer>
           )}
         </div>
-        {/* ── Gráfica Dona: Gastos por categoría ── */}
-        {!cargando && gastosCategoria.length > 0 && (() => {
-          const COLORS = ["#f59e0b","#10b981","#6366f1","#ef4444","#8b5cf6","#06b6d4","#f97316","#84cc16"];
-          const total = gastosCategoria.reduce((s, c) => s + c.value, 0);
-          return (
-            <div className="bg-muted/20 border border-border/30 rounded-2xl p-5 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Gastos por categoría</p>
-                  <p className="text-xs text-muted-foreground capitalize">{nombreMes}</p>
+        {/* ── Gráfica de dona: gastos por categoría ── */}
+        <div className="bg-muted/20 border border-border/30 rounded-2xl p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Gastos por categoría</p>
+              <p className="text-xs text-muted-foreground capitalize">{nombreMes}</p>
+            </div>
+          </div>
+
+          {cargando ? (
+            <div className="h-52 flex items-center justify-center">
+              <div className="w-40 h-40 rounded-full bg-muted animate-pulse" />
+            </div>
+          ) : datosDona.length === 0 ? (
+            <div className="h-52 flex items-center justify-center text-sm text-muted-foreground">
+              Sin gastos registrados este mes
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              {/* Dona */}
+              <div className="relative shrink-0">
+                <ResponsiveContainer width={220} height={220}>
+                  <PieChart>
+                    <Pie
+                      data={datosDona}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={62}
+                      outerRadius={95}
+                      paddingAngle={3}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {datosDona.map((_, i) => (
+                        <Cell key={i} fill={DONA_COLORS[i % DONA_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const d = payload[0];
+                        return (
+                          <div className="bg-background border border-border/50 rounded-xl px-3 py-2 text-xs shadow-xl">
+                            <p className="font-semibold text-foreground mb-0.5">{d.name}</p>
+                            <p className="font-mono" style={{ color: d.payload.fill }}>
+                              Q {Number(d.value).toLocaleString("es-GT", { minimumFractionDigits: 2 })}
+                            </p>
+                          </div>
+                        );
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                {/* Total en el centro */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Total</span>
+                  <span className="font-mono text-base font-bold text-amber-500">
+                    {fmtQ(metricas.totalGastosMes)}
+                  </span>
                 </div>
               </div>
-              <div className="flex flex-col md:flex-row items-center gap-4">
-                {/* Dona */}
-                <div className="w-full md:w-auto shrink-0">
-                  <ResponsiveContainer width={220} height={220}>
-                    <PieChart>
-                      <Pie
-                        data={gastosCategoria}
-                        cx="50%" cy="50%"
-                        innerRadius={60} outerRadius={95}
-                        paddingAngle={2}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {gastosCategoria.map((_, idx) => (
-                          <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const item = payload[0];
-                          return (
-                            <div className="bg-background border border-border/50 rounded-xl px-3 py-2 text-xs shadow-xl">
-                              <p className="font-semibold text-foreground">{item.name}</p>
-                              <p className="font-mono text-amber-400">{fmtQ(item.value as number)}</p>
-                              <p className="text-muted-foreground">{total ? Math.round((item.value as number / total) * 100) : 0}%</p>
-                            </div>
-                          );
-                        }}
+
+              {/* Leyenda custom */}
+              <div className="flex-1 flex flex-col gap-2 w-full">
+                {datosDona.map((d, i) => {
+                  const pct = metricas.totalGastosMes
+                    ? Math.round((d.value / metricas.totalGastosMes) * 100)
+                    : 0;
+                  return (
+                    <div key={d.name} className="flex items-center gap-3">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: DONA_COLORS[i % DONA_COLORS.length] }}
                       />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                {/* Leyenda */}
-                <div className="flex-1 flex flex-col gap-2 w-full">
-                  {gastosCategoria.map((cat, idx) => {
-                    const pct = total ? Math.round((cat.value / total) * 100) : 0;
-                    return (
-                      <div key={cat.name} className="flex items-center gap-3">
-                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[idx % COLORS.length] }} />
-                        <span className="text-xs text-muted-foreground flex-1 truncate">{cat.name}</span>
-                        <span className="font-mono text-xs text-foreground font-medium">{fmtQ(cat.value)}</span>
-                        <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="truncate text-foreground font-medium">{d.name}</span>
+                          <span className="font-mono text-muted-foreground ml-2 shrink-0">{fmtQ(d.value)}</span>
+                        </div>
+                        <div className="w-full h-[3px] bg-border/30 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-700"
+                            style={{ width: `${pct}%`, backgroundColor: DONA_COLORS[i % DONA_COLORS.length] }}
+                          />
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <span className="text-[10px] text-muted-foreground w-8 text-right shrink-0">{pct}%</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          );
-        })()}
+          )}
+        </div>
 
       </div>
     </main>
