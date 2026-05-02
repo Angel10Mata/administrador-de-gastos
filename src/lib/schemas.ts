@@ -16,6 +16,12 @@ export const deudaSchema = z.object({
     .number()
     .nonnegative("El abono no puede ser negativo")
     .default(0),
+
+  cuota_mensual: z.coerce
+    .number()
+    .nonnegative("La cuota no puede ser negativa")
+    .optional()
+    .nullable(),
     
   estado: z.string().default("Pendiente"),
   descripcion: z.string().optional().nullable().or(z.literal('')),

@@ -1,79 +1,108 @@
 "use client";
 
-import Image from "next/image";
-import { MapPin, Phone, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { ShieldCheck, Smartphone, GitMerge, Lock } from "lucide-react";
+
+const pillars = [
+  {
+    icon: ShieldCheck,
+    title: "Datos 100% tuyos",
+    desc: "Cada cuenta está aislada. Nadie más puede ver tus finanzas gracias a Row Level Security en Supabase.",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+  },
+  {
+    icon: Smartphone,
+    title: "Diseño responsive",
+    desc: "Accede desde cualquier dispositivo. La interfaz se adapta perfectamente a móvil, tablet y escritorio.",
+    color: "text-indigo-400",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-500/20",
+  },
+  {
+    icon: GitMerge,
+    title: "Todo en un lugar",
+    desc: "Gastos, ingresos, deudas y abonos conectados. Un ecosistema financiero completo y coherente.",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+  },
+  {
+    icon: Lock,
+    title: "Autenticación segura",
+    desc: "Inicio de sesión protegido. Tu acceso está cifrado y gestionado por Supabase Auth.",
+    color: "text-cyan-400",
+    bg: "bg-cyan-500/10",
+    border: "border-cyan-500/20",
+  },
+];
 
 export function AboutSection() {
   return (
     <section
       id="about"
-      className="min-h-screen lg:h-screen w-full snap-start flex flex-col items-center justify-start lg:justify-center px-6 pt-28 lg:pt-0 border-t border-border/40 bg-background overflow-hidden"
+      className="relative min-h-screen w-full snap-start flex flex-col items-center justify-center px-6 py-24 border-t border-border/20 bg-background overflow-hidden"
     >
+      {/* Orb fondo */}
+      <div className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] bg-indigo-500/5 blur-[120px] rounded-full" />
+
+      {/* Header */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        whileInView={{ opacity: 1, scale: 1, y: 0 }}
-        viewport={{ once: false, amount: 0.5 }}
-        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-        className="text-center mb-10 lg:mb-16 space-y-4"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.3 }}
+        transition={{ duration: 0.7 }}
+        className="text-center mb-14 relative z-10 max-w-xl"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-primary flex items-center gap-2">
-            <Info className="size-3" />
-            About Us
-          </span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 mb-5">
+          <ShieldCheck size={11} className="text-indigo-400" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">¿Por qué FlowFinance?</span>
         </div>
-        <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic text-foreground leading-none">
-          About Us
+        <h2
+          className="text-4xl md:text-5xl font-black leading-tight text-foreground mb-4"
+          style={{ fontFamily: "'Instrument Serif', serif" }}
+        >
+          Construido para{" "}
+          <em className="italic text-muted-foreground">la claridad</em>
         </h2>
+        <p className="text-sm text-muted-foreground">
+          FlowFinance nació para eliminar la confusión de las finanzas personales.
+          Sin hojas de cálculo, sin apps complicadas. Solo control real de tu dinero.
+        </p>
       </motion.div>
 
-      <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center w-full max-w-6xl pb-10">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 30 }}
-          whileInView={{ opacity: 1, scale: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.5 }}
-          className="relative aspect-square w-full max-w-80 lg:max-w-112.5 mx-auto"
-        >
-          <div className="h-full w-full rounded-4xl overflow-hidden border border-border/50">
-            <Image
-              src="/icon.png"
-              alt="Logo"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, x: 20 }}
-          whileInView={{ opacity: 1, scale: 1, x: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.7 }}
-          className="space-y-6 lg:space-y-8 text-center lg:text-left"
-        >
-          <p className="text-muted-foreground text-base lg:text-lg font-medium leading-relaxed italic">
-            En Farmacia Kore, construimos confianza a través de la atención profesional.
-            Cada medicamento es dispensado bajo los más estrictos controles para su tranquilidad.
-          </p>
-          <div className="grid gap-4">
-            <div className="flex items-center gap-4 p-5 rounded-3xl bg-card/30 border border-border/50">
-              <MapPin className="size-5 text-primary shrink-0" />
-              <p className="text-sm lg:text-lg font-bold uppercase text-foreground leading-tight">
-                3651 Danbury Road, Brewster, NY 10509
-              </p>
+      {/* Pilares */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl w-full relative z-10">
+        {pillars.map((p, idx) => (
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.5, delay: idx * 0.1 }}
+            whileHover={{ scale: 1.02 }}
+            className={`p-6 rounded-2xl border ${p.border} ${p.bg} cursor-default transition-all duration-300`}
+          >
+            <div className={`w-10 h-10 rounded-xl ${p.bg} border ${p.border} flex items-center justify-center mb-4`}>
+              <p.icon size={18} className={p.color} />
             </div>
-            <div className="flex items-center gap-4 p-5 rounded-3xl bg-card/30 border border-border/50">
-              <Phone className="size-5 text-primary shrink-0" />
-              <p className="text-xl lg:text-2xl font-mono font-black text-foreground">
-                +1 (845) 309-7936
-              </p>
-            </div>
-          </div>
-        </motion.div>
+            <h3 className="text-sm font-bold text-foreground mb-2">{p.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{p.desc}</p>
+          </motion.div>
+        ))}
       </div>
+
+      {/* Quote */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.5 }}
+        className="mt-12 text-center text-xs text-muted-foreground/50 max-w-sm italic"
+      >
+        "El primer paso para tener más dinero es saber exactamente en qué lo gastas."
+      </motion.p>
     </section>
   );
 }

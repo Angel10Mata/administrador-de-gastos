@@ -1,117 +1,139 @@
 "use client";
 
-import { MessageCircle, Phone, MapPin, PhoneCall } from "lucide-react";
+import Link from "next/link";
 import { motion } from "framer-motion";
+import { ArrowRight, Github, Mail, UserPlus } from "lucide-react";
 import { AuroraText } from "@/components/ui/aurora-text";
 
 export function ContactSection() {
-  const telDisplay = "+1 (845) 309-7936";
-  const whatsappUrl = "https://wa.me/18453097936";
-
   return (
     <section
       id="contact"
-      className="min-h-screen lg:h-screen w-full snap-start flex flex-col justify-between px-6 pt-28 pb-10 bg-background text-foreground border-t border-border/40 overflow-hidden"
+      className="min-h-screen w-full snap-start flex flex-col justify-between px-6 pt-24 pb-10 bg-background text-foreground border-t border-border/20 overflow-hidden"
     >
-      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-5xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.5 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="flex flex-col items-center text-center mb-6 lg:mb-8 space-y-4"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
-            <PhoneCall className="size-3 text-primary" />
-            <span className="text-[9px] font-bold uppercase tracking-widest text-primary">
-              Contact
-            </span>
-          </div>
-          <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic leading-none">
-            Let's Talk
-          </h2>
-        </motion.div>
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-3xl mx-auto gap-10">
 
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.3 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full p-6 lg:p-12 bg-card/40 backdrop-blur-xl border border-zinc-300 dark:border-zinc-700 rounded-4xl relative"
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.7 }}
+          className="text-center"
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
-              <p className="text-muted-foreground text-sm lg:text-base font-medium leading-relaxed">
-                Visite nuestra sucursal principal o contáctenos en línea para
-                asistencia farmacéutica inmediata.
-              </p>
-              <div className="flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl bg-muted/50 border border-zinc-200 dark:border-zinc-800">
-                <MapPin className="text-primary size-4 shrink-0" />
-                <span className="font-bold uppercase text-[10px] lg:text-xs tracking-tight leading-tight">
-                  3651 Danbury Road, Brewster, NY 10509
-                </span>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 mb-5">
+            <UserPlus size={11} className="text-emerald-400" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Empieza hoy</span>
+          </div>
+          <h2
+            className="text-4xl md:text-5xl font-black leading-tight text-foreground mb-4"
+            style={{ fontFamily: "'Instrument Serif', serif" }}
+          >
+            Toma el control{" "}
+            <br />
+            <em className="italic text-muted-foreground">de tu dinero</em>
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Crea tu cuenta gratuita en segundos y empieza a registrar tus finanzas hoy mismo.
+            Sin tarjetas, sin compromisos.
+          </p>
+        </motion.div>
+
+        {/* CTA cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+          className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
+          {/* Crear cuenta */}
+          <Link
+            href="/register"
+            className="group flex items-center justify-between p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+          >
+            <div className="flex items-center gap-4">
+              <span className="w-11 h-11 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
+                <UserPlus size={18} className="text-emerald-400" />
+              </span>
+              <div className="text-left">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Nuevo usuario</p>
+                <p className="text-sm font-bold text-foreground">Crear cuenta gratis</p>
               </div>
             </div>
+            <ArrowRight size={16} className="text-muted-foreground group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+          </Link>
 
-            <div className="grid gap-3">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                className="group flex items-center justify-between p-4 lg:p-6 rounded-3xl bg-background border border-zinc-300 dark:border-zinc-700 hover:bg-emerald-500 text-black dark:text-white hover:text-white dark:hover:text-black transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-4">
-                  <MessageCircle className="size-6 lg:size-8 text-emerald-500 group-hover:text-inherit" />
-                  <div className="text-left font-bold uppercase">
-                    <p className="text-[9px] opacity-60 tracking-widest text-inherit">
-                      WhatsApp
-                    </p>
-                    <p className="text-sm lg:text-lg text-inherit">Chat Now</p>
-                  </div>
-                </div>
-              </a>
-
-              {/* Call Us Button - Texto: Negro(Light) / Blanco(Dark) -> Hover: Blanco(Light) / Negro(Dark) */}
-              <a
-                href={`tel:18453097936`}
-                className="group flex items-center justify-between p-4 lg:p-6 rounded-3xl bg-background border border-zinc-300 dark:border-zinc-700 hover:bg-primary text-black dark:text-white hover:text-white dark:hover:text-black transition-all cursor-pointer"
-              >
-                <div className="flex items-center gap-4">
-                  <Phone className="size-6 lg:size-8 text-primary group-hover:text-inherit" />
-                  <div className="text-left font-bold uppercase">
-                    <p className="text-[9px] opacity-60 tracking-widest text-inherit">
-                      Call Us Now
-                    </p>
-                    <p className="text-sm lg:text-lg text-inherit tracking-tighter">
-                      {telDisplay}
-                    </p>
-                  </div>
-                </div>
-              </a>
+          {/* Iniciar sesión */}
+          <Link
+            href="/login"
+            className="group flex items-center justify-between p-6 rounded-2xl border border-border/30 bg-muted/10 hover:bg-muted/20 hover:border-border/60 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+          >
+            <div className="flex items-center gap-4">
+              <span className="w-11 h-11 rounded-xl bg-muted/30 flex items-center justify-center shrink-0">
+                <Mail size={18} className="text-muted-foreground" />
+              </span>
+              <div className="text-left">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Ya tengo cuenta</p>
+                <p className="text-sm font-bold text-foreground">Iniciar sesión</p>
+              </div>
             </div>
-          </div>
+            <ArrowRight size={16} className="text-muted-foreground group-hover:translate-x-1 transition-all" />
+          </Link>
         </motion.div>
+
+        {/* Separador */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="w-full flex items-center gap-4"
+        >
+          <div className="flex-1 h-[1px] bg-border/20" />
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/40">open source</span>
+          <div className="flex-1 h-[1px] bg-border/20" />
+        </motion.div>
+
+        {/* GitHub */}
+        <motion.a
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          href="https://github.com/Angel10Mata/administrador-de-gastos"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group inline-flex items-center gap-3 px-6 py-3 rounded-xl border border-border/30 bg-muted/10 hover:bg-muted/20 hover:border-border/50 transition-all duration-300 hover:scale-[1.02]"
+        >
+          <Github size={16} className="text-muted-foreground" />
+          <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+            Ver código en GitHub
+          </span>
+          <ArrowRight size={13} className="text-muted-foreground group-hover:translate-x-1 transition-transform" />
+        </motion.a>
       </div>
 
-      {/* Footer anclado abajo con texto XS fijo */}
+      {/* Footer */}
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="text-center mt-auto space-y-1"
+        className="text-center mt-10 space-y-1"
       >
-        <p className="text-xs font-bold uppercase tracking-widest opacity-40">
-          © 2026 FARMACIA KORE C.A.
+        <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">
+          © 2026 FlowFinance — Angel Mata
         </p>
-        <p className="text-xs font-bold uppercase tracking-widest">
+        <p className="text-[10px] font-bold uppercase tracking-widest">
           Powered by{" "}
           <a
-            href="https://www.oscar27jimenez.com"
+            href="https://supabase.com"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline cursor-pointer transition-all inline-block"
           >
-            <AuroraText>Kore.dev</AuroraText>
+            <AuroraText>Supabase + Next.js</AuroraText>
           </a>
         </p>
       </motion.div>

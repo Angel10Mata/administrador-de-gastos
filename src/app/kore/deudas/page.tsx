@@ -90,15 +90,30 @@ export default function DeudasPage() {
   const fmtQ = (n: number) =>
     `Q ${(n || 0).toLocaleString("es-GT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const progreso = (d: any) => {
-    if (!d.monto_original) return 0;
-    return Math.min(100, Math.round((d.monto_abonado / d.monto_original) * 100));
-  };
+  /**
+   * Calcula si la deuda está al día en base a la cuota mensual.
+   * Método: meses_transcurridos * cuota <= monto_abonado
+   */
+  const estadoCuota = (d: any): { label: string; color: string; bg: string; dot: string } => {
+    const cuota = Number(d.cuota_mensual);
+    if (!cuota) return { label: "Sin cuota", color: "text-muted-foreground", bg: "bg-muted/40", dot: "bg-muted-foreground" };
 
-  const barColor = (pct: number) => {
-    if (pct >= 100) return "bg-emerald-500";
-    if (pct >= 50)  return "bg-indigo-500";
-    return "bg-red-500";
+    // Meses entre created_at (o fecha inicial) y hoy
+    const inicio = new Date(d.created_at || d.fecha_pago || Date.now());
+    const hoy    = new Date();
+    // Mínimo 1 mes (ya que el primer mes también cuenta)
+    const meses  = Math.max(1,
+      (hoy.getFullYear() - inicio.getFullYear()) * 12 +
+      (hoy.getMonth()   - inicio.getMonth()) + 1
+    );
+
+    const esperado = cuota * meses;
+    const abonado  = Number(d.monto_abonado) || 0;
+
+    if (abonado >= esperado) {
+      return { label: "Al día", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10", dot: "bg-emerald-500" };
+    }
+    return { label: "Atrasada", color: "text-red-500", bg: "bg-red-500/10", dot: "bg-red-500" };
   };
 
   const badgeStyle = (estado: string) => {
@@ -257,7 +272,7 @@ export default function DeudasPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/40 border-b border-border/20">
-                {["Deuda", "Original", "Abonado", "Saldo", "Progreso", "Estado", "Vence", ""].map((h) => (
+                {["Deuda", "Original", "Abonado", "Saldo", "Cuota", "Estado", "Vence", ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                     {h}
                   </th>
@@ -279,8 +294,8 @@ export default function DeudasPage() {
                 </tr>
               ) : (
                 deudasFiltradas.map((d, i) => {
-                  const pct   = progreso(d);
                   const saldo = (d.monto_original || 0) - (d.monto_abonado || 0);
+                  const cuota = estadoCuota(d);
                   return (
                     <tr
                       key={d.id}
@@ -306,11 +321,21 @@ export default function DeudasPage() {
                           style={{ fontFamily: "'DM Mono', monospace" }}>
                         {fmtQ(saldo)}
                       </td>
-                      <td className="px-4 py-3 min-w-[90px]">
-                        <p className="text-[10px] text-muted-foreground mb-1">{pct}%</p>
-                        <div className="w-full h-[3px] bg-border/30 rounded-full">
-                          <div className={`h-[3px] rounded-full ${barColor(pct)}`} style={{ width: `${pct}%` }} />
-                        </div>
+                      {/* Cuota */}
+                      <td className="px-4 py-3 min-w-[110px]">
+                        {d.cuota_mensual ? (
+                          <div className="space-y-1">
+                            <p className="font-mono text-xs text-foreground" style={{ fontFamily: "'DM Mono', monospace" }}>
+                              {fmtQ(d.cuota_mensual)}<span className="text-muted-foreground/50">/mes</span>
+                            </p>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${cuota.bg} ${cuota.color}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${cuota.dot}`} />
+                              {cuota.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground/40">Sin cuota</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-medium capitalize ${badgeStyle(d.estado)}`}>
@@ -365,8 +390,8 @@ export default function DeudasPage() {
             {busqueda ? `Sin resultados para "${busqueda}"` : "No tienes deudas registradas."}
           </p>
         ) : deudasFiltradas.map((d) => {
-          const pct   = progreso(d);
           const saldo = (d.monto_original || 0) - (d.monto_abonado || 0);
+          const cuota = estadoCuota(d);
           return (
             <div key={d.id} className="border border-border/20 rounded-xl p-4 bg-muted/10">
               <div className="flex justify-between items-start mb-3">
@@ -400,18 +425,29 @@ export default function DeudasPage() {
                   <p className="font-mono text-xs text-red-400" style={{ fontFamily: "'DM Mono', monospace" }}>{fmtQ(saldo)}</p>
                 </div>
               </div>
-              <div className="w-full h-[3px] bg-border/30 rounded-full mb-1">
-                <div className={`h-[3px] rounded-full ${barColor(pct)}`} style={{ width: `${pct}%` }} />
-              </div>
-              <div className="flex justify-between items-center">
-                <p className="text-[10px] text-muted-foreground">{pct}% pagado</p>
-                {d.fecha_pago ? (() => {
-                  const dias = Math.ceil((new Date(d.fecha_pago).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-                  if (dias < 0) return <span className="inline-flex items-center gap-1 text-[10px] text-red-400"><Bell size={9} /> Vencida</span>;
-                  if (dias <= 7) return <span className="inline-flex items-center gap-1 text-[10px] text-amber-400"><Bell size={9} /> Vence en {dias}d</span>;
-                  return <span className="text-[10px] text-muted-foreground">Vence {new Date(d.fecha_pago).toLocaleDateString("es-GT", { day: "2-digit", month: "short" })}</span>;
-                })() : null}
-              </div>
+              {/* Cuota en mobile */}
+              {d.cuota_mensual ? (
+                <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${cuota.bg} mt-1`}>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">Cuota mensual</p>
+                    <p className={`font-mono text-xs font-semibold ${cuota.color}`} style={{ fontFamily: "'DM Mono', monospace" }}>
+                      {fmtQ(d.cuota_mensual)}/mes
+                    </p>
+                  </div>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold ${cuota.bg} ${cuota.color} border border-current/20`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${cuota.dot}`} />
+                    {cuota.label}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground/40 mt-1">Sin cuota definida</p>
+              )}
+              {d.fecha_pago ? (() => {
+                const dias = Math.ceil((new Date(d.fecha_pago).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                if (dias < 0) return <span className="inline-flex items-center gap-1 text-[10px] text-red-400 mt-2 block"><Bell size={9} /> Vencida</span>;
+                if (dias <= 7) return <span className="inline-flex items-center gap-1 text-[10px] text-amber-400 mt-2 block"><Bell size={9} /> Vence en {dias}d</span>;
+                return <span className="text-[10px] text-muted-foreground mt-2 block">Vence {new Date(d.fecha_pago).toLocaleDateString("es-GT", { day: "2-digit", month: "short" })}</span>;
+              })() : null}
             </div>
           );
         })}

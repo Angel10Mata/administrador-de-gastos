@@ -17,14 +17,15 @@ interface DeudaProps {
 export default function FormularioDeuda({ productoActual, onCompletado, onCancelar }: DeudaProps) {
   const user = useUser();
 
-  const [nombre,       setNombre]       = useState("");
-  const [categoria,    setCategoria]    = useState("");
+  const [nombre,        setNombre]        = useState("");
+  const [categoria,     setCategoria]     = useState("");
   const [montoOriginal, setMontoOriginal] = useState("");
   const [montoAbonado,  setMontoAbonado]  = useState("0");
-  const [estado,       setEstado]       = useState("Pendiente");
-  const [descripcion,  setDescripcion]  = useState("");
-  const [fechaPago,    setFechaPago]    = useState("");
-  const [loading,      setLoading]      = useState(false);
+  const [cuotaMensual,  setCuotaMensual]  = useState("");
+  const [estado,        setEstado]        = useState("Pendiente");
+  const [descripcion,   setDescripcion]   = useState("");
+  const [fechaPago,     setFechaPago]     = useState("");
+  const [loading,       setLoading]       = useState(false);
 
   useEffect(() => {
     if (productoActual) {
@@ -32,12 +33,13 @@ export default function FormularioDeuda({ productoActual, onCompletado, onCancel
       setCategoria(productoActual.categoria || "");
       setMontoOriginal(productoActual.monto_original?.toString() || "");
       setMontoAbonado(productoActual.monto_abonado?.toString() || "0");
+      setCuotaMensual(productoActual.cuota_mensual?.toString() || "");
       setEstado(productoActual.estado || "Pendiente");
       setDescripcion(productoActual.descripcion || "");
       setFechaPago(productoActual.fecha_pago || "");
     } else {
       setNombre(""); setCategoria(""); setMontoOriginal("");
-      setMontoAbonado("0"); setEstado("Pendiente"); setDescripcion(""); setFechaPago("");
+      setMontoAbonado("0"); setCuotaMensual(""); setEstado("Pendiente"); setDescripcion(""); setFechaPago("");
     }
   }, [productoActual]);
 
@@ -52,6 +54,7 @@ export default function FormularioDeuda({ productoActual, onCompletado, onCancel
       nombre, categoria,
       monto_original: Number(montoOriginal),
       monto_abonado:  Number(montoAbonado),
+      cuota_mensual:  cuotaMensual ? Number(cuotaMensual) : null,
       estado, descripcion,
       fecha_pago: fechaPago || null,
       usuario_id: user.id,
@@ -156,20 +159,41 @@ export default function FormularioDeuda({ productoActual, onCompletado, onCancel
           </div>
         </div>
 
-        {/* Monto */}
-        <div className="p-4 rounded-xl border border-border/20 bg-muted/20">
-          <label className={label}>
-            Monto original (Q) <span className="text-red-400">*</span>
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            value={montoOriginal}
-            onChange={(e) => setMontoOriginal(e.target.value)}
-            className={field}
-            placeholder="0.00"
-            required
-          />
+        {/* Monto + Cuota */}
+        <div className="p-4 rounded-xl border border-border/20 bg-muted/20 space-y-4">
+          <div>
+            <label className={label}>
+              Monto original (Q) <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={montoOriginal}
+              onChange={(e) => setMontoOriginal(e.target.value)}
+              className={field}
+              placeholder="0.00"
+              required
+            />
+          </div>
+          <div>
+            <label className={label}>
+              <span className="flex items-center gap-1.5">
+                Cuota mensual (Q)
+                <span className="text-muted-foreground/60 normal-case font-normal tracking-normal text-[10px]">
+                  — para saber si estás al día
+                </span>
+              </span>
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={cuotaMensual}
+              onChange={(e) => setCuotaMensual(e.target.value)}
+              className={field}
+              placeholder="Ej. 500.00 por mes"
+            />
+          </div>
         </div>
 
         {/* Estado */}

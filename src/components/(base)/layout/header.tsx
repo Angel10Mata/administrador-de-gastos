@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/components/(base)/providers/UserProvider";
+import { createClient } from "@/utils/supabase/client";
 import {
   Menu,
   X,
@@ -12,6 +14,7 @@ import {
   PhoneCall,
   LayoutGrid,
   LogIn,
+  LogOut,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -20,11 +23,19 @@ import { AuroraText } from "@/components/ui/aurora-text";
 
 export default function Header() {
   const user = useUser();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     console.log("Header (desde Context):", user);
   }, [user]);
+
+  const handleLogout = async () => {
+    setIsOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   const metadata =
     (user as any)?.raw_user_meta_data || user?.user_metadata || {};
@@ -124,6 +135,15 @@ export default function Header() {
                   </Link>
                 )}
               </nav>
+
+              {/* Botón cerrar sesión */}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/8 text-red-500 hover:bg-red-500/15 hover:border-red-500/40 transition-all text-sm font-semibold mb-4"
+              >
+                <LogOut size={16} />
+                Cerrar sesión
+              </button>
             </>
           ) : (
             <>

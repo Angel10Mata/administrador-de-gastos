@@ -91,7 +91,7 @@ export default function GastosPage() {
   const gastosMes = useMemo(() =>
     gastos.filter((g) => {
       if (!g.fecha) return false;
-      const f = new Date(g.fecha);
+      const f = new Date(g.fecha.length === 10 ? g.fecha + "T00:00:00" : g.fecha);
       const mismoMes = f.getMonth() === mesSelec && f.getFullYear() === anioSelec;
       if (!mismoMes) return false;
       if (diaSelec !== null) return f.getDate() === diaSelec;
