@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import FormularioIngreso from "@/components/Ingresos/Ingreso";
-import { PiggyBank, Home, ChevronRight, TrendingDown, Plus, Edit } from "lucide-react";
+import { verificarIngresosRecurrentesAction } from "@/lib/actions";
+import { PiggyBank, Home, ChevronRight, TrendingDown, Plus, Edit, RefreshCw } from "lucide-react";
 import { useUser } from "@/components/(base)/providers/UserProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,6 +21,8 @@ export default function IngresosPage() {
 
   const cargarIngresos = async () => {
     setCargando(true);
+    // Auto-generar ingresos recurrentes del mes si corresponde
+    await verificarIngresosRecurrentesAction();
     const supabase = createClient();
     try {
       if (!user?.id) return;
@@ -85,7 +88,7 @@ export default function IngresosPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/40 border-b border-border/20">
-                {["Fecha", "Concepto", "Cantidad", ""].map((h) => (
+                {["Fecha", "Concepto", "Tipo", "Cantidad", ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                     {h}
                   </th>
@@ -107,10 +110,21 @@ export default function IngresosPage() {
                 ingresos.map((i, idx) => (
                   <tr key={i.id} className={`hover:bg-muted/20 transition-colors ${idx < ingresos.length - 1 ? "border-b border-border/10" : ""}`}>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {i.fecha ? new Date(i.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }) : "—"}
+                      {i.fecha
+                        ? new Date(i.fecha.length === 10 ? i.fecha + "T00:00:00" : i.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })
+                        : <span className="text-indigo-400 text-[10px]">Auto</span>}
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-foreground">
                       {i.concepto}
+                    </td>
+                    <td className="px-4 py-3">
+                      {i.es_recurrente
+                        ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            <RefreshCw size={9} /> Recurrente
+                          </span>
+                        : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Único
+                          </span>}
                     </td>
                     <td className="px-4 py-3 font-mono text-sm text-emerald-500 font-medium" style={{ fontFamily: "'DM Mono', monospace" }}>
                       {fmtQ(i.cantidad)}

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
 import { crearIngresoAction, editarIngresoAction, eliminarIngresoAction } from "@/lib/actions";
-import { TrendingDown, Save, Trash2, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { TrendingDown, Save, Trash2, X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, RefreshCw, Zap } from "lucide-react";
 import { useUser } from "@/components/(base)/providers/UserProvider";
 import { format, parseISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, startOfWeek, endOfWeek } from "date-fns";
 import { es } from "date-fns/locale";
@@ -17,20 +17,27 @@ interface IngresoProps {
 export default function FormularioIngreso({ ingresoActual, onCompletado, onCancelar }: IngresoProps) {
   const user = useUser();
 
-  const [concepto, setConcepto] = useState("");
-  const [cantidad, setCantidad] = useState("");
-  const [fecha,    setFecha]    = useState("");
-  const [loading,  setLoading]  = useState(false);
-  const [showCal,  setShowCal]  = useState(false);
-  const [viewDate, setViewDate] = useState(new Date());
+  const [concepto,      setConcepto]      = useState("");
+  const [cantidad,      setCantidad]      = useState("");
+  const [fecha,         setFecha]         = useState("");
+  const [esRecurrente,  setEsRecurrente]  = useState(false);
+  const [diaPago,       setDiaPago]       = useState<string>("15");
+  const [diaPago2,      setDiaPago2]      = useState<string>("");   // día 2 opcional
+  const [loading,       setLoading]       = useState(false);
+  const [showCal,       setShowCal]       = useState(false);
+  const [viewDate,      setViewDate]      = useState(new Date());
 
   useEffect(() => {
     if (ingresoActual) {
       setConcepto(ingresoActual.concepto || "");
       setCantidad(ingresoActual.cantidad?.toString() || "");
       setFecha(ingresoActual.fecha || "");
+      setEsRecurrente(!!ingresoActual.es_recurrente);
+      setDiaPago(ingresoActual.dia_pago?.toString() || "15");
+      setDiaPago2(ingresoActual.dia_pago_2?.toString() || "");
     } else {
       setConcepto(""); setCantidad(""); setFecha("");
+      setEsRecurrente(false); setDiaPago("15"); setDiaPago2("");
     }
   }, [ingresoActual]);
 
@@ -41,11 +48,14 @@ export default function FormularioIngreso({ ingresoActual, onCompletado, onCance
       return;
     }
     setLoading(true);
-    const datos = {
+    const datos: any = {
       concepto,
       cantidad: Number(cantidad),
-      fecha: fecha || null,
+      fecha: esRecurrente ? null : (fecha || null),
       usuario_id: user.id,
+      es_recurrente: esRecurrente,
+      dia_pago: esRecurrente ? Number(diaPago) || null : null,
+      dia_pago_2: esRecurrente && diaPago2 ? Number(diaPago2) || null : null,
     };
     try {
       const result = ingresoActual?.id
@@ -85,7 +95,6 @@ export default function FormularioIngreso({ ingresoActual, onCompletado, onCance
   // ── Calendario inline ──
   const selectedDate = fecha ? parseISO(fecha) : null;
   const today = new Date();
-
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -106,7 +115,7 @@ export default function FormularioIngreso({ ingresoActual, onCompletado, onCance
           </div>
           <div>
             <p className="text-sm font-medium text-foreground">{ingresoActual ? "Editar ingreso" : "Nuevo ingreso"}</p>
-            <p className="text-[10px] text-muted-foreground">Registro extra o concurrente</p>
+            <p className="text-[10px] text-muted-foreground">Registro extra o recurrente</p>
           </div>
         </div>
         <button type="button" onClick={onCancelar} className="w-7 h-7 flex items-center justify-center rounded-md border border-border/40 bg-muted/30 hover:bg-muted transition-colors">
@@ -114,125 +123,157 @@ export default function FormularioIngreso({ ingresoActual, onCompletado, onCance
         </button>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-5">
-        <div>
-          <label className={labelStyle}>Concepto <span className="text-red-400">*</span></label>
-          <input type="text" value={concepto} onChange={(e) => setConcepto(e.target.value)} className={field} placeholder="Ej. Quincena, Bono..." required />
+
+        {/* ── Selector de tipo: Recurrente / No recurrente ── */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setEsRecurrente(false)}
+            className={`flex flex-col items-center gap-1.5 py-3.5 px-3 rounded-xl border text-center transition-all duration-200 ${
+              !esRecurrente
+                ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-500 shadow-sm"
+                : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40"
+            }`}
+          >
+            <Zap size={16} />
+            <span className="text-[11px] font-semibold leading-none">No recurrente</span>
+            <span className="text-[9px] opacity-60 leading-tight">Ingreso único / extra</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setEsRecurrente(true)}
+            className={`flex flex-col items-center gap-1.5 py-3.5 px-3 rounded-xl border text-center transition-all duration-200 ${
+              esRecurrente
+                ? "border-indigo-500/50 bg-indigo-500/10 text-indigo-400 shadow-sm"
+                : "border-border/40 bg-muted/20 text-muted-foreground hover:bg-muted/40"
+            }`}
+          >
+            <RefreshCw size={16} />
+            <span className="text-[11px] font-semibold leading-none">Recurrente</span>
+            <span className="text-[9px] opacity-60 leading-tight">Se repite cada mes</span>
+          </button>
         </div>
 
+        {/* Concepto */}
+        <div>
+          <label className={labelStyle}>Concepto <span className="text-red-400">*</span></label>
+          <input type="text" value={concepto} onChange={(e) => setConcepto(e.target.value)} className={field} placeholder="Ej. Quincena, Bono, Sueldo..." required />
+        </div>
+
+        {/* Cantidad */}
         <div className="p-4 rounded-xl border border-border/20 bg-muted/20">
           <label className={labelStyle}>Cantidad (Q) <span className="text-red-400">*</span></label>
           <input type="number" step="0.01" value={cantidad} onChange={(e) => setCantidad(e.target.value)} className={field} placeholder="0.00" required />
         </div>
 
-        {/* ── Fecha con calendario inline ── */}
-        <div className="space-y-1.5">
-          <label className={labelStyle}>
-            <span className="flex items-center gap-1.5"><CalendarIcon size={11} /> Fecha</span>
-          </label>
-
-          {/* Trigger */}
-          <button
-            type="button"
-            onClick={() => setShowCal(!showCal)}
-            className={`w-full h-10 flex items-center gap-2 rounded-lg border px-3 text-sm transition-all ${
-              showCal
-                ? "border-emerald-400/50 bg-emerald-500/5 text-foreground"
-                : "border-border/50 bg-muted/30 text-muted-foreground/60 hover:border-emerald-400/30 hover:text-foreground"
-            }`}
-          >
-            <CalendarIcon size={14} className={selectedDate ? "text-emerald-500" : "opacity-50"} />
-            {selectedDate
-              ? <span className="text-foreground font-medium">{format(selectedDate, "d 'de' MMMM, yyyy", { locale: es })}</span>
-              : <span>Seleccionar fecha</span>
-            }
-          </button>
-
-          {/* Calendario inline */}
-          {showCal && (
-            <div className="rounded-xl border border-border/30 bg-background shadow-lg overflow-hidden mt-1">
-              {/* Nav */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
-                <button
-                  type="button"
-                  onClick={() => setViewDate(subMonths(viewDate, 1))}
-                  className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <p className="text-sm font-semibold text-foreground capitalize">
-                  {format(viewDate, "MMMM yyyy", { locale: es })}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setViewDate(addMonths(viewDate, 1))}
-                  className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-                >
-                  <ChevronRight size={14} />
-                </button>
+        {/* ── Campos según tipo ── */}
+        {esRecurrente ? (
+          /* Días de pago */
+          <div className="p-4 rounded-xl border border-indigo-500/20 bg-indigo-500/5 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-indigo-400 font-semibold flex items-center gap-1.5">
+              <RefreshCw size={10} /> Configuración recurrente
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelStyle}>Día de pago 1 <span className="text-red-400">*</span></label>
+                <input
+                  type="number" min="1" max="31"
+                  value={diaPago}
+                  onChange={(e) => setDiaPago(e.target.value)}
+                  className={field}
+                  placeholder="Ej. 15"
+                  required={esRecurrente}
+                />
+                <p className="text-[9px] text-muted-foreground mt-1">Día del mes (1-31)</p>
               </div>
-
-              {/* Grid */}
-              <div className="p-3">
-                {/* Cabecera días */}
-                <div className="grid grid-cols-7 mb-1">
-                  {weekDays.map((d) => (
-                    <div key={d} className="text-center text-[10px] font-medium text-muted-foreground/60 py-1">{d}</div>
-                  ))}
-                </div>
-
-                {/* Días */}
-                <div className="grid grid-cols-7 gap-y-0.5">
-                  {days.map((day, idx) => {
-                    const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
-                    const isToday = isSameDay(day, today);
-                    const isCurrentMonth = isSameMonth(day, viewDate);
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          setFecha(format(day, "yyyy-MM-dd"));
-                          setShowCal(false);
-                        }}
-                        className={[
-                          "relative w-full aspect-square flex items-center justify-center rounded-lg text-xs font-medium transition-all",
-                          !isCurrentMonth ? "text-muted-foreground/25" : "",
-                          isSelected
-                            ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
-                            : isToday && isCurrentMonth
-                              ? "bg-muted text-foreground ring-1 ring-emerald-400/40"
-                              : isCurrentMonth
-                                ? "text-foreground hover:bg-muted/80"
-                                : "hover:bg-muted/30",
-                        ].join(" ")}
-                      >
-                        {day.getDate()}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div>
+                <label className={labelStyle}>Día de pago 2 <span className="text-muted-foreground/50">(opcional)</span></label>
+                <input
+                  type="number" min="1" max="31"
+                  value={diaPago2}
+                  onChange={(e) => setDiaPago2(e.target.value)}
+                  className={field}
+                  placeholder="Ej. 30"
+                />
+                <p className="text-[9px] text-muted-foreground mt-1">Si cobras 2 veces/mes</p>
               </div>
+            </div>
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20">
+              <RefreshCw size={11} className="text-indigo-400 mt-0.5 shrink-0" />
+              <p className="text-[10px] text-indigo-300 leading-relaxed">
+                Este ingreso se registrará automáticamente cada mes en{" "}
+                <strong>día {diaPago || "?"}{diaPago2 ? ` y día ${diaPago2}` : ""}</strong>.
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* Fecha única con calendario */
+          <div className="space-y-1.5">
+            <label className={labelStyle}>
+              <span className="flex items-center gap-1.5"><CalendarIcon size={11} /> Fecha</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowCal(!showCal)}
+              className={`w-full h-10 flex items-center gap-2 rounded-lg border px-3 text-sm transition-all ${
+                showCal
+                  ? "border-emerald-400/50 bg-emerald-500/5 text-foreground"
+                  : "border-border/50 bg-muted/30 text-muted-foreground/60 hover:border-emerald-400/30 hover:text-foreground"
+              }`}
+            >
+              <CalendarIcon size={14} className={selectedDate ? "text-emerald-500" : "opacity-50"} />
+              {selectedDate
+                ? <span className="text-foreground font-medium">{format(selectedDate, "d 'de' MMMM, yyyy", { locale: es })}</span>
+                : <span>Seleccionar fecha</span>
+              }
+            </button>
 
-              {/* Footer */}
-              {selectedDate && (
-                <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/20 bg-muted/10">
-                  <span className="text-xs text-muted-foreground capitalize">
-                    {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => { setFecha(""); setShowCal(false); }}
-                    className="text-[10px] text-red-400 hover:text-red-500 font-medium transition-colors"
-                  >
-                    Limpiar
+            {showCal && (
+              <div className="rounded-xl border border-border/30 bg-background shadow-lg overflow-hidden mt-1">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+                  <button type="button" onClick={() => setViewDate(subMonths(viewDate, 1))} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                    <ChevronLeft size={14} />
+                  </button>
+                  <p className="text-sm font-semibold text-foreground capitalize">{format(viewDate, "MMMM yyyy", { locale: es })}</p>
+                  <button type="button" onClick={() => setViewDate(addMonths(viewDate, 1))} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                    <ChevronRight size={14} />
                   </button>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+                <div className="p-3">
+                  <div className="grid grid-cols-7 mb-1">
+                    {weekDays.map((d) => (<div key={d} className="text-center text-[10px] font-medium text-muted-foreground/60 py-1">{d}</div>))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-y-0.5">
+                    {days.map((day, idx) => {
+                      const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+                      const isToday = isSameDay(day, today);
+                      const isCurrentMonth = isSameMonth(day, viewDate);
+                      return (
+                        <button key={idx} type="button"
+                          onClick={() => { setFecha(format(day, "yyyy-MM-dd")); setShowCal(false); }}
+                          className={[
+                            "relative w-full aspect-square flex items-center justify-center rounded-lg text-xs font-medium transition-all",
+                            !isCurrentMonth ? "text-muted-foreground/25" : "",
+                            isSelected ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                              : isToday && isCurrentMonth ? "bg-muted text-foreground ring-1 ring-emerald-400/40"
+                              : isCurrentMonth ? "text-foreground hover:bg-muted/80" : "hover:bg-muted/30",
+                          ].join(" ")}
+                        >{day.getDate()}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+                {selectedDate && (
+                  <div className="flex items-center justify-between px-4 py-2.5 border-t border-border/20 bg-muted/10">
+                    <span className="text-xs text-muted-foreground capitalize">{format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}</span>
+                    <button type="button" onClick={() => { setFecha(""); setShowCal(false); }} className="text-[10px] text-red-400 hover:text-red-500 font-medium transition-colors">Limpiar</button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Acciones */}
         <div className="flex flex-col-reverse md:flex-row gap-2.5 pt-1">

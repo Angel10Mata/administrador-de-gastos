@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from 'sweetalert2';
-import { crearGastoAction } from "@/lib/actions";
+import { crearGastoAction, actualizarGastoAction } from "@/lib/actions";
 import { useUser } from "@/components/(base)/providers/UserProvider";
-import { DollarSign, FileText, Save, X, Utensils, Car, Lightbulb, ShoppingBag, Tag } from "lucide-react";
+import { DollarSign, FileText, Save, X, Utensils, Car, Lightbulb, ShoppingBag, Tag, Pencil } from "lucide-react";
 
 const categorias = [
   { name: "Alimentación", icon: Utensils,   color: "text-orange-400",  bg: "bg-orange-500/10 border-orange-500/30",  activeBg: "bg-orange-500 border-orange-500"  },
@@ -14,31 +14,69 @@ const categorias = [
   { name: "Otros",        icon: Tag,         color: "text-slate-400",   bg: "bg-slate-500/10 border-slate-500/30",  activeBg: "bg-slate-500 border-slate-500"  },
 ];
 
-export default function Gastosm({ onCompletado, onCancelar }: { onCompletado?: () => void; onCancelar?: () => void }) {
+interface GastosProps {
+  onCompletado?: () => void;
+  onCancelar?:   () => void;
+  /** Si se pasa, el formulario estará en modo edición */
+  gastoEditar?: {
+    id: string;
+    descripcion: string;
+    monto: number;
+    categoria: string;
+  } | null;
+}
+
+export default function Gastosm({ onCompletado, onCancelar, gastoEditar }: GastosProps) {
   const user = useUser();
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ descripcion: "", monto: "", categoria: "Alimentación" });
+  const [form, setForm] = useState({
+    descripcion: gastoEditar?.descripcion ?? "",
+    monto:       gastoEditar?.monto       ? String(gastoEditar.monto) : "",
+    categoria:   gastoEditar?.categoria   ?? "Alimentación",
+  });
 
-  const catActiva = categorias.find((c) => c.name === form.categoria)!;
+  // Si cambia gastoEditar (e.g. abrir modal diferente), sincronizar
+  useEffect(() => {
+    setForm({
+      descripcion: gastoEditar?.descripcion ?? "",
+      monto:       gastoEditar?.monto       ? String(gastoEditar.monto) : "",
+      categoria:   gastoEditar?.categoria   ?? "Alimentación",
+    });
+  }, [gastoEditar?.id]);
+
+  const modoEdicion = !!gastoEditar;
+  const catActiva = categorias.find((c) => c.name === form.categoria) ?? categorias[0];
   const IconoActivo = catActiva.icon;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user?.id || !form.descripcion || !form.monto) return;
+    if (!form.descripcion || !form.monto) return;
 
     setLoading(true);
-    const result = await crearGastoAction({
-      descripcion: form.descripcion,
-      monto: Number(form.monto),
-      categoria: form.categoria,
-      usuario_id: user.id,
-    });
+    let result;
+
+    if (modoEdicion && gastoEditar) {
+      result = await actualizarGastoAction(gastoEditar.id, {
+        descripcion: form.descripcion,
+        monto: Number(form.monto),
+        categoria: form.categoria,
+      });
+    } else {
+      if (!user?.id) return;
+      result = await crearGastoAction({
+        descripcion: form.descripcion,
+        monto: Number(form.monto),
+        categoria: form.categoria,
+        usuario_id: user.id,
+      });
+    }
 
     if (result.success) {
       const isDark = document.documentElement.classList.contains("dark");
       Swal.fire({
         toast: true, position: "top-end", icon: "success",
-        title: "Gasto guardado correctamente", showConfirmButton: false, timer: 2000,
+        title: modoEdicion ? "Gasto actualizado" : "Gasto guardado correctamente",
+        showConfirmButton: false, timer: 2000,
         background: isDark ? "#1a1a1a" : "#fff", color: isDark ? "#fff" : "#000",
       });
       if (onCompletado) onCompletado();
@@ -59,7 +97,11 @@ export default function Gastosm({ onCompletado, onCancelar }: { onCompletado?: (
               <IconoActivo size={17} className="text-white" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-white leading-none">Nuevo gasto</h2>
+              <h2 className="text-base font-semibold text-white leading-none flex items-center gap-2">
+                {modoEdicion ? (
+                  <><Pencil size={13} className="opacity-60" /> Editar gasto</>
+                ) : "Nuevo gasto"}
+              </h2>
               <p className="text-[11px] text-white/40 mt-0.5">{catActiva.name}</p>
             </div>
           </div>
@@ -160,12 +202,12 @@ export default function Gastosm({ onCompletado, onCancelar }: { onCompletado?: (
           {loading ? (
             <span className="flex items-center gap-2">
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Guardando...
+              {modoEdicion ? "Actualizando..." : "Guardando..."}
             </span>
           ) : (
             <>
               <Save size={15} />
-              Guardar gasto
+              {modoEdicion ? "Guardar cambios" : "Guardar gasto"}
             </>
           )}
         </button>

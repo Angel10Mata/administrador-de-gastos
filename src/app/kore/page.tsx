@@ -332,16 +332,26 @@ export default function PanelDeControl() {
 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <Link href="/kore/ingresos" className="flex flex-col justify-center items-center h-48 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-6 hover:bg-emerald-500/10 transition-colors group">
-            <span className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <TrendingDown className="text-emerald-500 rotate-180" size={24} />
-            </span>
-            <span className="text-xl font-medium text-emerald-600 dark:text-emerald-400">Total Ingresos</span>
-            {cargando ? (
-               <Skeleton className="h-8 w-32 mt-2" />
-            ) : (
-               <span className="font-mono text-3xl md:text-4xl text-emerald-500 font-bold mt-2">{fmtQ(metricas.totalIngresosMes)}</span>
-            )}
+          {/* Ingresos — mismo layout que Egresos */}
+          <Link href="/kore/ingresos" className="flex flex-col h-48 border border-emerald-500/30 bg-emerald-500/5 rounded-2xl p-6 hover:bg-emerald-500/10 transition-colors group">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0">
+                <TrendingDown className="text-emerald-500 rotate-180" size={20} />
+              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">Total Ingresos</span>
+                {cargando ? (
+                  <div className="h-6 w-24 mt-1 bg-muted rounded animate-pulse" />
+                ) : (
+                  <span className="font-mono text-xl md:text-2xl text-emerald-500 font-bold">{fmtQ(metricas.totalIngresosMes)}</span>
+                )}
+              </div>
+            </div>
+            <div className="mt-auto">
+              <span className="text-sm font-medium text-emerald-700/80 uppercase tracking-widest flex items-center gap-2">
+                Ver detalles &rarr;
+              </span>
+            </div>
           </Link>
 
           <Link href="/kore/gastos" className="flex flex-col h-48 border border-amber-500/30 bg-amber-500/5 rounded-2xl p-6 hover:bg-amber-500/10 transition-colors group">

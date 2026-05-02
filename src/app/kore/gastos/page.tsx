@@ -25,6 +25,7 @@ export default function GastosPage() {
   const hoy = new Date();
   const [gastos, setGastos] = useState<any[]>([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [gastoEditar, setGastoEditar] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState("");
 
@@ -84,7 +85,13 @@ export default function GastosPage() {
 
   const handleCompletado = () => {
     setMostrarFormulario(false);
+    setGastoEditar(null);
     cargarGastos();
+  };
+
+  const abrirEditar = (g: any) => {
+    setGastoEditar(g);
+    setMostrarFormulario(true);
   };
 
   // Filtrar por mes seleccionado (y opcionalmente día)
@@ -294,7 +301,7 @@ export default function GastosPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-muted/40 border-b border-border/20">
-                {["Descripción", "Categoría", "Monto", "Fecha"].map((h) => (
+                {["Descripción", "Categoría", "Monto", "Fecha", ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground whitespace-nowrap">
                     {h}
                   </th>
@@ -341,6 +348,15 @@ export default function GastosPage() {
                           ? new Date(g.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" })
                           : "—"}
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={() => abrirEditar(g)}
+                          className="w-7 h-7 inline-flex items-center justify-center rounded-md border border-border/40 bg-muted/30 hover:bg-muted transition-colors"
+                          title="Editar"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -366,19 +382,27 @@ export default function GastosPage() {
             return (
               <div key={g.id} className="border border-border/20 rounded-xl p-4 bg-muted/10">
                 <div className="flex justify-between items-start mb-2">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{g.descripcion}</p>
                     <span className="inline-flex items-center gap-1 mt-1 text-[10px] text-muted-foreground bg-muted/50 rounded-full px-2 py-0.5 whitespace-nowrap">
                       <Icono size={10} />
                       {g.categoria || "Otros"}
                     </span>
                   </div>
-                  <p className="font-mono text-sm text-amber-500 font-medium whitespace-nowrap ml-2" style={{ fontFamily: "'DM Mono', monospace" }}>
-                    {fmtQ(g.monto)}
-                  </p>
+                  <div className="flex items-center gap-2 ml-2">
+                    <p className="font-mono text-sm text-amber-500 font-medium whitespace-nowrap" style={{ fontFamily: "'DM Mono', monospace" }}>
+                      {fmtQ(g.monto)}
+                    </p>
+                    <button
+                      onClick={() => abrirEditar(g)}
+                      className="w-7 h-7 flex items-center justify-center rounded-md border border-border/40 bg-muted/30 hover:bg-muted transition-colors shrink-0"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                  </div>
                 </div>
                 <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-3 pt-2 border-t border-border/10">
-                  <span>Fecha de registro</span>
+                  <span>Fecha</span>
                   <span>{g.fecha ? new Date(g.fecha).toLocaleDateString("es-GT", { day: "2-digit", month: "short", year: "numeric" }) : "—"}</span>
                 </div>
               </div>
@@ -393,7 +417,8 @@ export default function GastosPage() {
           <div className="w-full max-w-lg max-h-[95vh] overflow-y-auto rounded-2xl shadow-2xl animate-in zoom-in-95 duration-200">
             <Gastosm
               onCompletado={handleCompletado}
-              onCancelar={() => setMostrarFormulario(false)}
+              onCancelar={() => { setMostrarFormulario(false); setGastoEditar(null); }}
+              gastoEditar={gastoEditar}
             />
           </div>
         </div>
